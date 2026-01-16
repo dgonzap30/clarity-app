@@ -1,0 +1,418 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ===== CLARITY COLOR PALETTE ===== */
+    /* Backgrounds */
+    --background: 0 0% 100%;           /* Pure white */
+    --background-subtle: 220 14% 98%;   /* Near-white sections */
+    --background-muted: 220 13% 96%;    /* Card backgrounds */
+
+    /* Text */
+    --foreground: 220 13% 13%;          /* Primary text */
+    --foreground-muted: 220 9% 46%;     /* Secondary text */
+    --foreground-subtle: 220 9% 65%;    /* Captions */
+
+    /* Primary Accent */
+    --primary: 220 91% 54%;             /* Clean blue accent */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 220 91% 96%;       /* Hover states */
+
+    /* Card surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+
+    /* Popover/dropdown surfaces */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+
+    /* Secondary UI elements */
+    --secondary: 220 13% 96%;
+    --secondary-foreground: 220 13% 13%;
+
+    /* Muted backgrounds */
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent backgrounds */
+    --accent: 220 13% 96%;
+    --accent-foreground: 220 13% 13%;
+
+    /* Semantic Colors */
+    --success: 142 72% 42%;             /* Green - positive */
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 70% 94%;
+
+    --warning: 38 92% 50%;              /* Amber - caution */
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 100% 92%;
+
+    --destructive: 0 84% 60%;           /* Red - negative */
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 80% 95%;
+
+    /* Budget status colors */
+    --budget-safe: 142 72% 42%;         /* Green - on track */
+    --budget-warning: 38 92% 50%;       /* Amber - warning */
+    --budget-danger: 0 84% 60%;         /* Red - over budget */
+
+    /* Accent colors */
+    --accent-green: 142 72% 42%;        /* Green accent */
+
+    /* Borders */
+    --border: 220 13% 91%;
+    --border-subtle: 220 13% 95%;
+
+    /* Input border */
+    --input: 220 13% 91%;
+
+    /* Focus ring */
+    --ring: 220 91% 54%;
+
+    /* Border radius */
+    --radius: 0.5rem;
+
+    /* ===== SPACING SCALE ===== */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.5rem;    /* 24px */
+    --space-6: 2rem;      /* 32px */
+    --space-7: 2.5rem;    /* 40px */
+    --space-8: 3rem;      /* 48px */
+
+    /* Section spacing */
+    --section-gap: var(--space-8);
+    --card-padding: var(--space-6);
+    --card-padding-compact: var(--space-4);
+
+    /* Scrollbar colors */
+    --scrollbar-track: 220 13% 96%;
+    --scrollbar-thumb: 220 13% 70%;
+    --scrollbar-thumb-hover: 220 13% 55%;
+  }
+
+  .dark {
+    /* Dark mode surfaces */
+    --background: 220 13% 9%;
+    --background-subtle: 220 13% 11%;
+    --background-muted: 220 13% 13%;
+
+    --foreground: 220 14% 96%;
+    --foreground-muted: 220 9% 65%;
+    --foreground-subtle: 220 9% 46%;
+
+    --card: 220 13% 11%;
+    --card-foreground: 220 14% 96%;
+
+    --popover: 220 13% 11%;
+    --popover-foreground: 220 14% 96%;
+
+    --primary: 220 91% 54%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 220 91% 20%;
+
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 14% 96%;
+
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 65%;
+
+    --accent: 220 13% 15%;
+    --accent-foreground: 220 14% 96%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 70% 15%;
+
+    --warning: 38 90% 55%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 70% 18%;
+
+    --destructive: 0 80% 63%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 60% 18%;
+
+    /* Budget status colors */
+    --budget-safe: 142 70% 45%;
+    --budget-warning: 38 90% 55%;
+    --budget-danger: 0 80% 63%;
+
+    /* Accent colors */
+    --accent-green: 142 70% 45%;
+
+    --border: 220 13% 21%;
+    --border-subtle: 220 13% 15%;
+
+    --input: 220 13% 21%;
+    --ring: 220 91% 54%;
+
+    --scrollbar-track: 220 13% 15%;
+    --scrollbar-thumb: 220 13% 30%;
+    --scrollbar-thumb-hover: 220 13% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* ===== TYPOGRAPHY UTILITIES ===== */
+
+  /* Headings */
+  .text-h1 {
+    @apply text-5xl font-bold tracking-tight;
+  }
+
+  .text-h2 {
+    @apply text-4xl font-semibold tracking-tight;
+  }
+
+  .text-h3 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+
+  .text-h4 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  .text-h5 {
+    @apply text-xl font-medium;
+  }
+
+  .text-h6 {
+    @apply text-lg font-medium;
+  }
+
+  /* Body text */
+  .text-body {
+    @apply text-base font-normal;
+  }
+
+  .text-body-sm {
+    @apply text-sm font-normal;
+  }
+
+  /* Labels and captions */
+  .text-label {
+    @apply text-xs font-medium tracking-wide;
+  }
+
+  .text-caption {
+    @apply text-xs text-foreground-subtle;
+  }
+
+  /* Amount displays */
+  .text-amount-xl {
+    @apply text-5xl font-mono tracking-tight;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .text-amount-lg {
+    @apply text-4xl font-mono tracking-tight;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .text-amount-md {
+    @apply text-2xl font-mono tracking-tight;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .text-amount-sm {
+    @apply text-lg font-mono;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Legacy typography classes */
+  .label-uppercase {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  .amount-primary {
+    @apply text-4xl font-extrabold tracking-tight;
+  }
+
+  .amount-secondary {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  .section-header {
+    @apply text-base font-semibold text-foreground tracking-tight pb-2;
+  }
+
+  /* Tabular numerals for monetary values */
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .font-amount {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.01em;
+  }
+
+  /* ===== VISUAL SEPARATORS ===== */
+  .stats-divider {
+    @apply relative;
+  }
+
+  .stats-divider::after {
+    content: '';
+    @apply absolute right-0 top-1/2 -translate-y-1/2 w-px h-8 hidden sm:block;
+    background: hsl(var(--border));
+  }
+
+  .stats-divider:last-child::after {
+    display: none;
+  }
+
+  /* Horizontal separator */
+  .section-separator {
+    @apply h-px w-full my-4 bg-border;
+  }
+}
+
+@layer utilities {
+  /* ===== FONT FAMILIES ===== */
+  .font-display {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .font-mono-numbers {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* ===== CUSTOM SCROLLBAR ===== */
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--scrollbar-track));
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: hsl(var(--scrollbar-track));
+    border-radius: 4px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb));
+    border-radius: 4px;
+    border: 2px solid hsl(var(--scrollbar-track));
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--scrollbar-thumb-hover));
+  }
+
+  /* Hidden scrollbar variant */
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ===== SIMPLE ANIMATIONS ===== */
+
+  /* Fade in */
+  .animate-fade-in {
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Tab transitions */
+  .animate-tab-enter {
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  /* Card entry */
+  .animate-card-enter {
+    animation: fadeIn 0.2s ease-out forwards;
+  }
+
+  /* Number change pulse */
+  .animate-number-change {
+    animation: number-pulse 0.3s ease-out;
+  }
+
+  @keyframes number-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  /* Touch target utilities */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* ===== ACCESSIBILITY UTILITIES ===== */
+
+  /* Skip link - visually hidden until focused */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    padding: 0.75rem 1.5rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    font-weight: 500;
+    z-index: 100;
+    transition: top 0.2s ease;
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* Accessibility: Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
