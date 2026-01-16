@@ -583,11 +583,23 @@ export function extractMerchantName(description: string): string {
 }
 
 export function extractLocation(description: string): string {
-  const locationPattern = /(MADISON|SAN FRANCISCO|NEW YORK|MEXICO CITY|CIUDAD DE MEX|HOUSTON|BOSTON|SINGAPORE|LONDON|PALO ALTO|CUPERTINO|BELLEVILLE|MIDDLETON|CHARLOTTE|ATLANTA|NEWPORT BEACH|MOUNTAIN VIEW|WALNUT CREEK|COVINA|LOS ANGELES)/i;
+  // Exclude non-location patterns
+  if (/AMZN\.COM\/BILL/i.test(description)) {
+    return '';
+  }
+
+  const locationPattern = /(MADISON|SAN FRANCISCO|NEW YORK|MEXICO CITY|MEXICO D\.F\.|CD MEXICO|CIUDAD DE MEX|HOUSTON|BOSTON|SINGAPORE|LONDON|PALO ALTO|CUPERTINO|BELLEVILLE|MIDDLETON|CHARLOTTE|ATLANTA|NEWPORT BEACH|MOUNTAIN VIEW|WALNUT CREEK|COVINA|LOS ANGELES|SCHAUMBURG)/i;
 
   const match = description.match(locationPattern);
   if (match) {
-    return match[1];
+    const location = match[1];
+
+    // Normalize Mexico City variations
+    if (/MEXICO D\.F\.|CD MEXICO/i.test(location)) {
+      return 'MEXICO CITY';
+    }
+
+    return location;
   }
 
   return '';

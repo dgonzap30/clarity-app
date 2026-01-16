@@ -156,7 +156,7 @@ export function InsightsCard({ insights, categories, transactions, month, settin
 
   return (
     <Card variant="elevated">
-      <AuroraBackground variant="subtle" animated={hasPositiveInsight}>
+      <AuroraBackground variant="subtle" animated={hasPositiveInsight ?? undefined}>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <Lightbulb className="h-5 w-5 text-aurora-insight" />

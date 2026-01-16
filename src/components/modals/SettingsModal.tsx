@@ -18,16 +18,20 @@ interface SettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settingsHook: UseSettingsReturn;
+  transactionCount: number;
+  onClearTransactions: () => void;
 }
 
 export function SettingsModal({
   open,
   onOpenChange,
   settingsHook,
+  transactionCount,
+  onClearTransactions,
 }: SettingsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] max-w-2xl sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -36,7 +40,7 @@ export function SettingsModal({
         </DialogHeader>
 
         <Tabs defaultValue="categories" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="mx-auto">
+          <TabsList className="flex w-full overflow-x-auto justify-start sm:justify-center gap-1 scrollbar-hide">
             <TabsTrigger value="categories" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Categories</span>
@@ -85,7 +89,11 @@ export function SettingsModal({
             </TabsContent>
 
             <TabsContent value="preferences" className="mt-0 h-full">
-              <PreferencesSettings settingsHook={settingsHook} />
+              <PreferencesSettings
+                settingsHook={settingsHook}
+                transactionCount={transactionCount}
+                onClearTransactions={onClearTransactions}
+              />
             </TabsContent>
           </div>
         </Tabs>

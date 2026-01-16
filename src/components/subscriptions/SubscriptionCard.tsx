@@ -77,7 +77,7 @@ export function SubscriptionCard({ subscription, onClick }: SubscriptionCardProp
 
   return (
     <Card
-      variant="subscription"
+      variant="elevated"
       className={cn(
         'overflow-hidden cursor-pointer',
         subscription.status === 'cancelled' && 'opacity-60',

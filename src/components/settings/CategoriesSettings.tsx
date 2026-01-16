@@ -59,7 +59,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { PRESET_COLORS, CATEGORY_ICONS } from '@/lib/category-presets';
 import { DEFAULT_CATEGORIES } from '@/lib/constants';
 import { isDefaultCategoryId } from '@/types';
-import type { CategoryId } from '@/types';
+import type { CategoryId, Category } from '@/types';
 import { cn } from '@/lib/utils';
 
 // Icon mapping for dynamic rendering
@@ -309,7 +309,7 @@ export function CategoriesSettings({ settingsHook }: CategoriesSettingsProps) {
           </CardHeader>
           <CardContent className="space-y-2">
             {deletedDefaults.map((override) => {
-              const defaultCat = DEFAULT_CATEGORIES.find((c) => c.id === override.id);
+              const defaultCat = Object.values(DEFAULT_CATEGORIES).find((c: Category) => c.id === override.id);
               const displayName = defaultCat?.name || override.id;
 
               return (

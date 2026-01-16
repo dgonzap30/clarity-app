@@ -44,14 +44,13 @@ const TabsTrigger = React.forwardRef<
       "disabled:pointer-events-none disabled:opacity-50",
       // Inactive state
       "text-muted-foreground",
-      // Active state
+      // Active state - cleaner, more visible
       "data-[state=active]:text-foreground",
       "data-[state=active]:border-primary",
-      "data-[state=active]:bg-primary/5",
       "data-[state=active]:font-semibold",
       // Hover state for inactive tabs
-      "data-[state=inactive]:hover:text-foreground",
-      "data-[state=inactive]:hover:bg-muted/50",
+      "data-[state=inactive]:hover:text-foreground/80",
+      "data-[state=inactive]:hover:border-border",
       className
     )}
     {...props}

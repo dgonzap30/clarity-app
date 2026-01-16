@@ -33,7 +33,7 @@ import { SettingsModal } from '@/components/modals/SettingsModal';
 import { PDFExport } from '@/components/PDFExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { parseCSV } from '@/lib/csv-parser';
-import { loadTransactions, saveTransactions } from '@/lib/storage';
+import { loadTransactions, saveTransactions, clearTransactions } from '@/lib/storage';
 import { downloadJSON, downloadCSV } from '@/lib/export';
 import { useSettings } from '@/hooks/useSettings';
 import { useCategories } from '@/hooks/useCategories';
@@ -146,6 +146,11 @@ function App() {
   const handleExportCSV = useCallback(() => {
     downloadCSV(transactions);
   }, [transactions]);
+
+  const handleClearTransactions = useCallback(() => {
+    clearTransactions();
+    setTransactions([]);
+  }, []);
 
   // Filter transactions for selected month
   const monthTransactions = useMemo(() => {
@@ -503,6 +508,8 @@ function App() {
           open={settingsModalOpen}
           onOpenChange={setSettingsModalOpen}
           settingsHook={settingsHook}
+          transactionCount={transactions.length}
+          onClearTransactions={handleClearTransactions}
         />
 
         {/* Subscription Detail Modal */}

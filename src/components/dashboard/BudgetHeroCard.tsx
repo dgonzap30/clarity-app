@@ -5,13 +5,11 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { EmptyStateCompact } from '@/components/ui/empty-state';
 import { SparkleEffect } from '@/components/ui/sparkle-effect';
-import { AuroraBackground } from '@/components/ui/aurora-background';
 import type { Transaction } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
 import { Calendar, TrendingDown, TrendingUp, PiggyBank, Award } from 'lucide-react';
 import type { UserSettings } from '@/types/settings';
 import { getBudgetStatusMessage } from '@/lib/messages';
-import { startOfMonth, subMonths, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface BudgetHeroCardProps {
@@ -98,25 +96,6 @@ export function BudgetHeroCard({ transactions, month, settings }: BudgetHeroCard
     return sorted.length > 0 ? sorted[0] : null;
   }, [settings.budgets, monthTransactions, transactions]);
 
-  // Calculate sparkline data (last 4 months)
-  const sparklineData = useMemo(() => {
-    const data = [];
-    for (let i = 3; i >= 0; i--) {
-      const monthDate = startOfMonth(subMonths(month, i));
-      const monthTransactions = transactions.filter((t) => {
-        const isInMonth =
-          t.date.getMonth() === monthDate.getMonth() &&
-          t.date.getFullYear() === monthDate.getFullYear();
-        const isBudgeted = budgetedCategoryIds.includes(t.category.id);
-        return isInMonth && isBudgeted;
-      });
-
-      const spent = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
-      data.push(spent);
-    }
-    return data;
-  }, [transactions, month, budgetedCategoryIds]);
-
   // Determine status and color
   let status: 'on-track' | 'warning' | 'over-budget' = 'on-track';
   let progressStatus: 'success' | 'warning' | 'danger' = 'success';
@@ -187,25 +166,6 @@ export function BudgetHeroCard({ transactions, month, settings }: BudgetHeroCard
     );
   }
 
-  // Generate sparkline path
-  const sparklinePath = useMemo(() => {
-    if (sparklineData.length === 0) return '';
-
-    const max = Math.max(...sparklineData, totalBudget);
-    const min = 0;
-    const width = 60;
-    const height = 20;
-    const padding = 2;
-
-    const points = sparklineData.map((value, index) => {
-      const x = (index / (sparklineData.length - 1)) * (width - padding * 2) + padding;
-      const y = height - padding - ((value - min) / (max - min)) * (height - padding * 2);
-      return `${x},${y}`;
-    });
-
-    return `M ${points.join(' L ')}`;
-  }, [sparklineData, totalBudget]);
-
   return (
     <>
       <Card
@@ -221,13 +181,18 @@ export function BudgetHeroCard({ transactions, month, settings }: BudgetHeroCard
           <div className="space-y-6">
             {/* Header with amounts */}
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Budget Status</p>
+              <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium">Budget Status</p>
               <div className="space-y-3">
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-5xl sm:text-6xl font-bold tracking-tight animate-count-up">
+                  <span className={cn(
+                    "text-5xl sm:text-6xl font-bold tracking-tight animate-count-up",
+                    status === 'on-track' && "text-gradient-teal glow-teal",
+                    status === 'warning' && "text-gradient-amber glow-amber",
+                    status === 'over-budget' && "text-gradient-red glow-red"
+                  )}>
                     {formatCurrency(totalSpent)}
                   </span>
-                  <span className="text-xl sm:text-2xl text-muted-foreground">
+                  <span className="text-xl sm:text-2xl text-muted-foreground/70">
                     / {formatCurrency(totalBudget)}
                   </span>
                   <Badge variant={badgeVariant} className="text-base px-3 py-1">
@@ -264,11 +229,11 @@ export function BudgetHeroCard({ transactions, month, settings }: BudgetHeroCard
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-white/5 items-center">
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Days Remaining</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Days Remaining</p>
                 <p className="text-xl font-semibold">{daysRemaining} / {daysInMonth}</p>
               </div>
             </div>
@@ -277,7 +242,7 @@ export function BudgetHeroCard({ transactions, month, settings }: BudgetHeroCard
                 {onPace ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Daily Average</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Daily Average</p>
                 <p className="text-xl font-semibold">{formatCurrency(dailyRate)}</p>
               </div>
             </div>
@@ -286,8 +251,11 @@ export function BudgetHeroCard({ transactions, month, settings }: BudgetHeroCard
                 {onPace ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Projected Total</p>
-                <p className={`text-xl font-semibold ${!onPace ? 'text-warning' : ''}`}>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Projected Total</p>
+                <p className={cn(
+                  "text-xl font-semibold",
+                  !onPace && "text-warning"
+                )}>
                   {formatCurrency(projectedTotal)}
                 </p>
               </div>

@@ -8,31 +8,41 @@ const cardVariants = cva(
   {
     variants: {
       variant: {
-        // Default: Clean, minimal card
+        // Default: Glass morphism card with subtle backdrop blur
         default: [
-          "bg-card",
-          "border border-border",
+          "glass-card",
+          "shadow-glass",
+          "relative overflow-hidden",
         ],
-        // Elevated: Card with subtle shadow
+        // Elevated: Glass card with enhanced shadow and glow
         elevated: [
-          "bg-card",
-          "border border-border",
-          "shadow-sm",
+          "glass-card",
+          "shadow-glass-lg",
+          "relative overflow-hidden",
+          "before:absolute before:inset-0 before:rounded-lg before:p-[1px]",
+          "before:bg-gradient-to-br before:from-white/10 before:to-transparent",
+          "before:-z-10",
         ],
-        // Interactive: Clickable card with hover states
+        // Interactive: Clickable glass card with hover glow
         interactive: [
-          "bg-card",
-          "border border-border",
-          "hover:border-foreground/20",
-          "hover:shadow-sm",
+          "glass-card",
+          "shadow-glass",
+          "relative overflow-hidden",
+          "hover:shadow-glass-lg",
+          "hover:border-white/10",
           "cursor-pointer",
+          "transition-all duration-300",
         ],
-        // Hero: Elevated card with gradient background for emphasis
+        // Hero: Premium glass card with gradient glow effect
         hero: [
-          "bg-gradient-to-br from-card to-muted/30",
-          "border-2 border-border",
-          "shadow-sm",
-          "ring-1 ring-inset ring-white/5 dark:ring-white/10",
+          "glass-card",
+          "shadow-glow-purple",
+          "relative overflow-hidden",
+          "before:absolute before:inset-0 before:rounded-lg",
+          "before:bg-gradient-to-br before:from-gradient-purple-from/5 before:to-transparent",
+          "before:-z-10",
+          "after:absolute after:top-0 after:left-0 after:right-0 after:h-px",
+          "after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent",
         ],
       },
     },

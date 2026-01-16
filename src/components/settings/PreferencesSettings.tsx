@@ -11,19 +11,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertTriangle, Upload, Keyboard, User, Sparkles, Download, FileUp, Database } from 'lucide-react';
+import { AlertTriangle, Upload, Keyboard, User, Sparkles, Download, FileUp, Database, Trash2, RotateCcw, Bomb } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { UseSettingsReturn } from '@/hooks/useSettings';
 import type { UserSettings } from '@/types/settings';
 
 interface PreferencesSettingsProps {
   settingsHook: UseSettingsReturn;
+  transactionCount: number;
+  onClearTransactions: () => void;
 }
 
-export function PreferencesSettings({ settingsHook }: PreferencesSettingsProps) {
-  const { settings, setPreference, updateSettings } = settingsHook;
+export function PreferencesSettings({ settingsHook, transactionCount, onClearTransactions }: PreferencesSettingsProps) {
+  const { settings, setPreference, updateSettings, resetToDefaults } = settingsHook;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState(false);
+  const [showClearTransactionsDialog, setShowClearTransactionsDialog] = useState(false);
+  const [showResetSettingsDialog, setShowResetSettingsDialog] = useState(false);
+  const [showClearEverythingDialog, setShowClearEverythingDialog] = useState(false);
 
   const handleExportSettings = () => {
     const dataStr = JSON.stringify(settings, null, 2);
@@ -73,6 +88,22 @@ export function PreferencesSettings({ settingsHook }: PreferencesSettingsProps) 
     }
   };
 
+  const handleClearTransactions = () => {
+    onClearTransactions();
+    setShowClearTransactionsDialog(false);
+  };
+
+  const handleResetSettings = () => {
+    resetToDefaults();
+    setShowResetSettingsDialog(false);
+  };
+
+  const handleClearEverything = () => {
+    onClearTransactions();
+    resetToDefaults();
+    setShowClearEverythingDialog(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Profile & Personalization */}
@@ -97,7 +128,7 @@ export function PreferencesSettings({ settingsHook }: PreferencesSettingsProps) 
               value={settings.preferences.userName || ''}
               onChange={(e) => setPreference('userName', e.target.value)}
               placeholder="Enter your name"
-              className="max-w-sm"
+              className="w-full sm:max-w-sm"
             />
             <p className="text-xs text-muted-foreground">
               Used for personalized greetings in the header
@@ -232,7 +263,7 @@ export function PreferencesSettings({ settingsHook }: PreferencesSettingsProps) 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-2 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">Open upload modal</span>
               <kbd className="px-2 py-1 rounded bg-muted font-mono text-xs">
@@ -257,19 +288,19 @@ export function PreferencesSettings({ settingsHook }: PreferencesSettingsProps) 
                 ⌘ F
               </kbd>
             </div>
-            <div className="flex items-center justify-between py-2 border-b">
+            <div className="flex items-center justify-between py-2 border-b md:border-b-0">
               <span className="text-muted-foreground">Previous month</span>
               <kbd className="px-2 py-1 rounded bg-muted font-mono text-xs">
                 ←
               </kbd>
             </div>
-            <div className="flex items-center justify-between py-2 border-b">
+            <div className="flex items-center justify-between py-2 border-b md:border-b-0">
               <span className="text-muted-foreground">Next month</span>
               <kbd className="px-2 py-1 rounded bg-muted font-mono text-xs">
                 →
               </kbd>
             </div>
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between py-2 md:col-span-2">
               <span className="text-muted-foreground">Show shortcuts help</span>
               <kbd className="px-2 py-1 rounded bg-muted font-mono text-xs">
                 ?
@@ -361,6 +392,142 @@ export function PreferencesSettings({ settingsHook }: PreferencesSettingsProps) 
           )}
         </CardContent>
       </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-destructive/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
+          </div>
+          <CardDescription>
+            These actions are irreversible. Proceed with caution.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Clear All Transactions */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </div>
+              <div>
+                <Label className="font-medium">Clear All Transactions</Label>
+                <p className="text-sm text-muted-foreground">
+                  Remove all {transactionCount} transaction{transactionCount !== 1 ? 's' : ''} from the dashboard
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowClearTransactionsDialog(true)}
+              variant="destructive"
+              size="sm"
+              disabled={transactionCount === 0}
+            >
+              Clear Data
+            </Button>
+          </div>
+
+          {/* Reset Settings */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <RotateCcw className="h-4 w-4 text-destructive" />
+              </div>
+              <div>
+                <Label className="font-medium">Reset Settings</Label>
+                <p className="text-sm text-muted-foreground">
+                  Restore categories, budgets, and rules to defaults
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowResetSettingsDialog(true)}
+              variant="destructive"
+              size="sm"
+            >
+              Reset
+            </Button>
+          </div>
+
+          {/* Clear Everything */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <Bomb className="h-4 w-4 text-destructive" />
+              </div>
+              <div>
+                <Label className="font-medium">Clear Everything</Label>
+                <p className="text-sm text-muted-foreground">
+                  Delete all data and start fresh
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowClearEverythingDialog(true)}
+              variant="destructive"
+              size="sm"
+            >
+              Clear Everything
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Confirmation Dialogs */}
+      <AlertDialog open={showClearTransactionsDialog} onOpenChange={setShowClearTransactionsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all transactions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all {transactionCount} transaction{transactionCount !== 1 ? 's' : ''} from your dashboard.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearTransactions} className="bg-destructive hover:bg-destructive/90">
+              Clear Transactions
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showResetSettingsDialog} onOpenChange={setShowResetSettingsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset settings to defaults?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will restore all settings including custom categories, budgets, rules, and preferences to their default values.
+              Your transactions will not be affected. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetSettings} className="bg-destructive hover:bg-destructive/90">
+              Reset Settings
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showClearEverythingDialog} onOpenChange={setShowClearEverythingDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear everything?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all {transactionCount} transaction{transactionCount !== 1 ? 's' : ''} and reset all settings to defaults.
+              You will lose all your data, custom categories, budgets, and rules. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearEverything} className="bg-destructive hover:bg-destructive/90">
+              Clear Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

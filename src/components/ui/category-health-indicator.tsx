@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Check, AlertTriangle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +12,6 @@ interface CategoryHealthIndicatorProps {
 
 export function CategoryHealthIndicator({
   percentUsed,
-  daysRemaining,
   projectedOverspend,
   variant = 'badge',
   className,

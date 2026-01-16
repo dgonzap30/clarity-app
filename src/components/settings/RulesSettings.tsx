@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { RuleBuilder } from './RuleBuilder';
-import { SplitRuleEditor } from './SplitRuleEditor';
 import {
   Select,
   SelectContent,
@@ -34,7 +33,6 @@ import {
   ListFilter,
   Brain,
   Search,
-  Split,
 } from 'lucide-react';
 import type { UseSettingsReturn } from '@/hooks/useSettings';
 import type { CategoryId } from '@/types';
@@ -50,7 +48,6 @@ export function RulesSettings({ settingsHook }: RulesSettingsProps) {
     settingsHook;
   const { categories, categoryList } = useCategories(settings);
 
-  const [isAddingRule, setIsAddingRule] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [newRule, setNewRule] = useState({
     pattern: '',
@@ -59,28 +56,13 @@ export function RulesSettings({ settingsHook }: RulesSettingsProps) {
     priority: 100,
   });
 
-  // New state for RuleBuilder and SplitRuleEditor
+  // New state for RuleBuilder
   const [ruleBuilderOpen, setRuleBuilderOpen] = useState(false);
-  const [splitRuleEditorOpen, setSplitRuleEditorOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Delete confirmation state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
-
-  const handleAddRule = () => {
-    if (!newRule.pattern.trim()) return;
-
-    addRule({
-      pattern: newRule.pattern.trim(),
-      categoryId: newRule.categoryId,
-      isRegex: newRule.isRegex,
-      priority: newRule.priority,
-    });
-
-    setNewRule({ pattern: '', categoryId: 'personal', isRegex: false, priority: 100 });
-    setIsAddingRule(false);
-  };
 
   const handleEditRule = (rule: CustomCategorizationRule) => {
     setEditingRuleId(rule.id);

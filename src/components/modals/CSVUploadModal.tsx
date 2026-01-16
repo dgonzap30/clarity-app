@@ -29,7 +29,13 @@ import {
   SkipForward,
 } from 'lucide-react';
 import { parseCSV } from '@/lib/csv-parser';
-import { detectDuplicates, getDuplicateStats, type DuplicateCandidate } from '@/lib/duplicate-detector';
+import {
+  detectDuplicates,
+  getDuplicateStats,
+  detectInternalDuplicates,
+  type DuplicateCandidate,
+  type InternalDuplicateCandidate,
+} from '@/lib/duplicate-detector';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import type { Transaction } from '@/types';
 
@@ -54,6 +60,7 @@ export function CSVUploadModal({
   const [uploadMode, setUploadMode] = useState<'merge' | 'replace'>(defaultUploadMode);
   const [parsedTransactions, setParsedTransactions] = useState<Transaction[]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
+  const [internalDuplicates, setInternalDuplicates] = useState<InternalDuplicateCandidate[]>([]);
   const [uniqueTransactions, setUniqueTransactions] = useState<Transaction[]>([]);
   const [skippedDuplicates, setSkippedDuplicates] = useState<Set<string>>(new Set());
   const [fileName, setFileName] = useState<string>('');
@@ -63,6 +70,7 @@ export function CSVUploadModal({
     setStep('select');
     setParsedTransactions([]);
     setDuplicates([]);
+    setInternalDuplicates([]);
     setUniqueTransactions([]);
     setSkippedDuplicates(new Set());
     setFileName('');
@@ -86,6 +94,11 @@ export function CSVUploadModal({
         const text = await file.text();
         const transactions = parseCSV(text);
         setParsedTransactions(transactions);
+
+        // Detect internal duplicates within the CSV
+        const internalResult = detectInternalDuplicates(transactions);
+        setInternalDuplicates(internalResult.internalDuplicates);
+
         setStep('preview');
       } catch (err) {
         setError('Failed to parse CSV file. Please check the format.');
@@ -267,6 +280,53 @@ export function CSVUploadModal({
                   </div>
                 </div>
               </div>
+
+              {/* Internal duplicates warning */}
+              {internalDuplicates.length > 0 && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-medium text-yellow-900 dark:text-yellow-100">
+                        {internalDuplicates.length} Internal Duplicate{internalDuplicates.length !== 1 ? 's' : ''} Detected
+                      </div>
+                      <div className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                        The uploaded CSV contains {internalDuplicates.length} duplicate transaction{internalDuplicates.length !== 1 ? 's' : ''} within the file itself.
+                        {internalDuplicates.filter(d => d.isLegitimate).length > 0 && (
+                          <span> {internalDuplicates.filter(d => d.isLegitimate).length} may be legitimate (e.g., subscriptions).</span>
+                        )}
+                      </div>
+                      {/* Show first few internal duplicates */}
+                      <div className="mt-2 space-y-2">
+                        {internalDuplicates.slice(0, 3).map((dup, idx) => (
+                          <div key={idx} className="text-xs bg-yellow-500/5 p-2 rounded border border-yellow-500/10">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Copy className="h-3 w-3" />
+                              <span className="font-medium">{dup.transaction1.merchant}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {dup.matchType}
+                              </Badge>
+                              {dup.isLegitimate && (
+                                <Badge variant="outline" className="text-xs bg-green-500/10">
+                                  May be legitimate
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-yellow-700 dark:text-yellow-300">
+                              {formatDate(dup.transaction1.date)} • {formatCurrency(dup.transaction1.amount)} (appears {2}x)
+                            </div>
+                          </div>
+                        ))}
+                        {internalDuplicates.length > 3 && (
+                          <div className="text-xs text-yellow-700 dark:text-yellow-300">
+                            And {internalDuplicates.length - 3} more internal duplicates...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Upload mode */}
               <div className="flex items-center justify-between p-3 rounded-lg border">

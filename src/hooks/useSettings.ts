@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { UserSettings, BudgetConfig, CustomCategorizationRule, CustomCategory, SuggestionSettings } from '@/types/settings';
+import { DEFAULT_SETTINGS } from '@/types/settings';
 import type { SubscriptionSettings } from '@/types/subscription';
 import type { CategoryId } from '@/types';
 import { isDefaultCategoryId } from '@/types';
@@ -19,6 +20,7 @@ import {
   deleteDefaultCategory,
   restoreDefaultCategory,
   resetDefaultCategory,
+  clearSettings,
 } from '@/lib/settings-storage';
 
 export interface UseSettingsReturn {
@@ -326,8 +328,8 @@ export function useSettings(): UseSettingsReturn {
 
   // Reset
   const resetToDefaults = useCallback(() => {
-    const defaults = loadSettings();
-    setSettings(defaults);
+    clearSettings();
+    setSettings(DEFAULT_SETTINGS);
   }, []);
 
   return {

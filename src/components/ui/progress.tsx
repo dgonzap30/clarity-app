@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const progressVariants = cva(
-  "h-full w-full flex-1 rounded-full transition-all origin-left",
+  "h-full w-full flex-1 rounded-full transition-all origin-left relative",
   {
     variants: {
       status: {
@@ -61,7 +61,7 @@ const Progress = React.forwardRef<
       aria-label={ariaLabel}
       className={cn(
         "relative h-2 w-full overflow-hidden rounded-full",
-        "bg-muted",
+        "bg-white/5 backdrop-blur-sm border border-white/10",
         className
       )}
       {...props}

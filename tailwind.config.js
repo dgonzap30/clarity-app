@@ -68,12 +68,49 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Gradient color system
+        gradient: {
+          blue: {
+            from: 'hsl(var(--gradient-blue-from))',
+            to: 'hsl(var(--gradient-blue-to))',
+          },
+          teal: {
+            from: 'hsl(var(--gradient-teal-from))',
+            to: 'hsl(var(--gradient-teal-to))',
+          },
+          purple: {
+            from: 'hsl(var(--gradient-purple-from))',
+            to: 'hsl(var(--gradient-purple-to))',
+          },
+          amber: {
+            from: 'hsl(var(--gradient-amber-from))',
+            to: 'hsl(var(--gradient-amber-to))',
+          },
+          red: {
+            from: 'hsl(var(--gradient-red-from))',
+            to: 'hsl(var(--gradient-red-to))',
+          },
+        },
       },
       boxShadow: {
         sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        // Premium layered shadows with colored tints
+        'glass': '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1)',
+        'glass-lg': '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1)',
+        'glow-blue': '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 48px rgba(59, 130, 246, 0.1)',
+        'glow-purple': '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 48px rgba(139, 92, 246, 0.1)',
+        'glow-teal': '0 4px 24px rgba(0, 0, 0, 0.4), 0 0 48px rgba(6, 214, 160, 0.1)',
+      },
+      backdropBlur: {
+        xs: '2px',
+        sm: '4px',
+        DEFAULT: '8px',
+        md: '12px',
+        lg: '16px',
+        xl: '24px',
       },
       animation: {
         'fade-in': 'fadeIn 0.15s ease-out',

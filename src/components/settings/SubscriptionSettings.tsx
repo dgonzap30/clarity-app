@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Search, Trash2, Plus, X } from 'lucide-react';
+import { Bell, Search, Plus, X } from 'lucide-react';
 import type { UseSettingsReturn } from '@/hooks/useSettings';
 
 interface SubscriptionSettingsProps {

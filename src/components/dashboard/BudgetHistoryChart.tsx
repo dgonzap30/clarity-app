@@ -145,9 +145,10 @@ export function BudgetHistoryChart({
                   }
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) => {
+                  formatter={(value: number | undefined, name: string | undefined) => {
+                    if (value === undefined) return ['', name ?? ''];
                     if (name === 'spent') return [formatCurrency(value), 'Spent'];
-                    return [formatCurrency(value), name];
+                    return [formatCurrency(value), name ?? ''];
                   }}
                   labelFormatter={(label, payload) =>
                     payload?.[0]?.payload?.monthFull || label

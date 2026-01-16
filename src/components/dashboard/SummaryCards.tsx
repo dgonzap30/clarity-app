@@ -47,8 +47,8 @@ export function SummaryCards({ transactions }: SummaryCardsProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card, index) => (
-        <Card key={card.title} variant={index === 0 ? "primary" : "default"}>
+      {cards.map((card) => (
+        <Card key={card.title} variant="default">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
             <card.icon className="h-4 w-4 text-muted-foreground" />

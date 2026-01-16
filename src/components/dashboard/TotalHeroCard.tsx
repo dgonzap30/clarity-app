@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Transaction, Category } from '@/types';
 import type { UserSettings } from '@/types/settings';
@@ -158,7 +157,7 @@ export function TotalHeroCard({
         <div className="space-y-6">
           {/* Header with total */}
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Total Spending</p>
+            <p className="text-sm text-muted-foreground uppercase tracking-wider font-medium">Total Spending</p>
             <div className="space-y-3">
               <span className="text-5xl sm:text-6xl font-bold tracking-tight animate-count-up">
                 {formatCurrency(totalSpent)}
@@ -274,10 +273,10 @@ export function TotalHeroCard({
           </div>
 
           {/* Daily Average */}
-          <div className="flex items-center gap-3 pt-6 border-t">
+          <div className="flex items-center gap-3 pt-6 border-t border-white/5">
             <Calendar className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Daily Average</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Daily Average</p>
               <p className="text-xl font-semibold">{formatCurrency(dailyAverage)}</p>
             </div>
             {isCurrentMonth && (

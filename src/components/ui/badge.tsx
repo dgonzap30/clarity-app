@@ -10,23 +10,23 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80 hover:shadow-md",
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/90",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:border-border",
+          "border-white/10 bg-white/5 text-foreground backdrop-blur-sm hover:bg-white/10",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "text-foreground border-border hover:border-primary hover:bg-primary/5",
-        // Status variants with tinted backgrounds
+          "text-foreground border-border bg-transparent hover:border-primary/50 hover:bg-primary/10",
+        // Status variants with solid backgrounds for clarity
         success:
-          "border-transparent bg-success-light text-success hover:bg-success-light/80",
+          "border-transparent bg-success text-white",
         warning:
-          "border-transparent bg-warning-light text-warning-foreground hover:bg-warning-light/80",
+          "border-transparent bg-warning text-white",
         danger:
-          "border-transparent bg-destructive-light text-destructive hover:bg-destructive-light/80",
-        // Filter variant for toggle-able filter chips
+          "border-transparent bg-destructive text-white",
+        // Filter variant - clean active state
         filter:
-          "border-border text-foreground bg-transparent hover:border-primary hover:bg-primary/5 hover:scale-[1.02] cursor-pointer data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary data-[active=true]:shadow-sm",
+          "border-border/50 text-foreground bg-white/5 backdrop-blur-sm hover:border-white/30 hover:bg-white/10 cursor-pointer data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:border-primary data-[active=true]:shadow-sm",
       },
     },
     defaultVariants: {
