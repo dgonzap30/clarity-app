@@ -65,6 +65,7 @@ export function CSVUploadModal({
   const [skippedDuplicates, setSkippedDuplicates] = useState<Set<string>>(new Set());
   const [fileName, setFileName] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [confidenceFilter, setConfidenceFilter] = useState<'all' | 'exact' | 'likely' | 'possible'>('all');
 
   const reset = useCallback(() => {
     setStep('select');
@@ -75,6 +76,7 @@ export function CSVUploadModal({
     setSkippedDuplicates(new Set());
     setFileName('');
     setError('');
+    setConfidenceFilter('all');
   }, []);
 
   const handleClose = useCallback(() => {
@@ -152,6 +154,10 @@ export function CSVUploadModal({
     setSkippedDuplicates(new Set(duplicates.map((d) => d.newTransaction.id)));
   }, [duplicates]);
 
+  const handleKeepAll = useCallback(() => {
+    setSkippedDuplicates(new Set());
+  }, []);
+
   const handleComplete = useCallback(() => {
     // Get duplicates that weren't skipped
     const keptDuplicates = duplicates
@@ -182,6 +188,11 @@ export function CSVUploadModal({
 
   const duplicateStats = getDuplicateStats({ unique: uniqueTransactions, duplicates });
   const finalCount = uniqueTransactions.length + (duplicates.length - skippedDuplicates.size);
+
+  // Filter duplicates by confidence level
+  const filteredDuplicates = confidenceFilter === 'all'
+    ? duplicates
+    : duplicates.filter(d => d.matchType === confidenceFilter);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -362,6 +373,24 @@ export function CSVUploadModal({
                 </div>
               )}
 
+              {/* localStorage Data Warning */}
+              <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-2">
+                  <div className="font-medium text-blue-900 dark:text-blue-100">
+                    Your Data is Stored Locally
+                  </div>
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>All transactions are stored in <strong>your browser only</strong></li>
+                      <li>Data does not sync across devices or browsers</li>
+                      <li>Clearing browser data will permanently delete your transactions</li>
+                      <li><strong>Recommendation:</strong> Export your data regularly as backup (JSON or CSV)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               {/* Preview table */}
               <div>
                 <div className="text-sm font-medium mb-2">Preview (first 5 transactions)</div>
@@ -421,26 +450,131 @@ export function CSVUploadModal({
                 </div>
               </div>
 
-              {/* Skip all button */}
-              <div className="flex justify-end">
-                <Button variant="outline" size="sm" onClick={handleSkipAll}>
-                  <SkipForward className="h-4 w-4 mr-1" />
-                  Skip All Duplicates
+              {/* Enhanced batch actions */}
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  {skippedDuplicates.size} of {duplicates.length} will be skipped
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleKeepAll}
+                    disabled={skippedDuplicates.size === 0}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Keep All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSkipAll}
+                    disabled={skippedDuplicates.size === duplicates.length}
+                  >
+                    <SkipForward className="h-4 w-4 mr-1" />
+                    Skip All
+                  </Button>
+                </div>
+              </div>
+
+              {/* Confidence filter */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground">Show:</span>
+                <div className="flex gap-1 flex-wrap">
+                  <Button
+                    variant={confidenceFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setConfidenceFilter('all')}
+                  >
+                    All ({duplicates.length})
+                  </Button>
+                  <Button
+                    variant={confidenceFilter === 'exact' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setConfidenceFilter('exact')}
+                  >
+                    Exact ({duplicates.filter(d => d.matchType === 'exact').length})
+                  </Button>
+                  <Button
+                    variant={confidenceFilter === 'likely' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setConfidenceFilter('likely')}
+                  >
+                    Likely ({duplicates.filter(d => d.matchType === 'likely').length})
+                  </Button>
+                  <Button
+                    variant={confidenceFilter === 'possible' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setConfidenceFilter('possible')}
+                  >
+                    Possible ({duplicates.filter(d => d.matchType === 'possible').length})
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick actions */}
+              <div className="flex items-center gap-2 text-sm flex-wrap">
+                <span className="text-muted-foreground">Quick actions:</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const exactIds = duplicates
+                      .filter(d => d.matchType === 'exact')
+                      .map(d => d.newTransaction.id);
+                    setSkippedDuplicates(new Set(exactIds));
+                  }}
+                >
+                  Skip exact matches only
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const possibleIds = duplicates
+                      .filter(d => d.matchType === 'possible')
+                      .map(d => d.newTransaction.id);
+                    setSkippedDuplicates(prev => {
+                      const next = new Set(prev);
+                      possibleIds.forEach(id => next.delete(id));
+                      return next;
+                    });
+                  }}
+                >
+                  Keep possible matches
                 </Button>
               </div>
 
-              {/* Duplicates list */}
+              {/* Duplicates list with checkbox style */}
               <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {duplicates.map((dup) => {
+                {filteredDuplicates.map((dup) => {
                   const isSkipped = skippedDuplicates.has(dup.newTransaction.id);
 
                   return (
                     <div
                       key={dup.newTransaction.id}
-                      className={`p-3 rounded-lg border ${isSkipped ? 'opacity-50' : ''}`}
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        isSkipped
+                          ? 'bg-muted/30 opacity-60'
+                          : 'bg-background hover:bg-accent/50'
+                      }`}
+                      onClick={() =>
+                        isSkipped
+                          ? handleKeepDuplicate(dup.newTransaction.id)
+                          : handleSkipDuplicate(dup.newTransaction.id)
+                      }
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
+                          {/* Checkbox indicator */}
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            isSkipped
+                              ? 'border-muted bg-muted'
+                              : 'border-primary bg-primary'
+                          }`}>
+                            {!isSkipped && <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+
                           <Copy className="h-4 w-4 text-yellow-600" />
                           <Badge
                             variant={dup.matchType === 'exact' ? 'destructive' : 'secondary'}
@@ -455,16 +589,9 @@ export function CSVUploadModal({
                             {Math.round(dup.confidence * 100)}% confidence
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isSkipped ? (
-                            <Button size="sm" variant="outline" onClick={() => handleKeepDuplicate(dup.newTransaction.id)}>
-                              Keep
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="ghost" onClick={() => handleSkipDuplicate(dup.newTransaction.id)}>
-                              Skip
-                            </Button>
-                          )}
+
+                        <div className="text-sm font-medium">
+                          {isSkipped ? 'Will Skip' : 'Will Import'}
                         </div>
                       </div>
 
