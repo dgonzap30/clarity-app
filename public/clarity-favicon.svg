@@ -1,26 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .c-color { fill: #4A90FF; }
-      }
-      @media (prefers-color-scheme: light) {
-        .c-color { fill: #3B82F6; }
-      }
-    </style>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .c-stroke { stroke: #4A90FF; }
+      .c-fill { fill: #4A90FF; }
+    }
+    @media (prefers-color-scheme: light) {
+      .c-stroke { stroke: #3B82F6; }
+      .c-fill { fill: #3B82F6; }
+    }
+  </style>
 
-  <!-- Simple C shape - circle with wedge cut out -->
-  <path class="c-color" fill-rule="evenodd" d="
-    M 16,2
-    A 14,14 0 1,0 16,30
-    A 14,14 0 0,0 26.1,25.5
-    L 23,22.3
-    A 10,10 0 1,1 26,16
-    L 26,18
-    L 30,18
-    L 30,16
-    A 14,14 0 0,0 16,2
-    Z
-  " />
+  <!-- C-shaped arc - EXACT copy from logo component -->
+  <path
+    d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12c3.314 0 6.314-1.343 8.485-3.515"
+    stroke-width="3"
+    stroke-linecap="round"
+    fill="none"
+    class="c-stroke"
+  />
+
+  <!-- Center dot - EXACT copy from logo component -->
+  <circle
+    cx="16"
+    cy="16"
+    r="4"
+    class="c-fill"
+  />
 </svg>
