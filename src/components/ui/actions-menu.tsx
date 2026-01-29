@@ -4,7 +4,6 @@ import {
   FileText,
   FileJson,
   FileSpreadsheet,
-  Settings,
   Sun,
   Moon,
   Monitor,
@@ -23,14 +22,12 @@ interface ActionsMenuProps {
   onExportPDF: () => void;
   onExportJSON: () => void;
   onExportCSV: () => void;
-  onSettingsClick: () => void;
 }
 
 export function ActionsMenu({
   onExportPDF,
   onExportJSON,
   onExportCSV,
-  onSettingsClick,
 }: ActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [exportExpanded, setExportExpanded] = useState(false);
@@ -125,15 +122,7 @@ export function ActionsMenu({
           )}
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-border my-2" />
-
-        {/* Settings */}
-        <MenuItem
-          icon={Settings}
-          label="Settings"
-          onClick={() => handleAction(onSettingsClick)}
-        />
+        
 
         {/* Divider */}
         <div className="h-px bg-border my-2" />

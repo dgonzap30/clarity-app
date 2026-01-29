@@ -1,5 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ThemeProvider } from '@/components/ThemeProvider';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+
+import { Routes, Route } from 'react-router-dom';
+import { SettingsPage } from '@/pages/SettingsPage';
+import { LayoutDashboard, Wallet, RefreshCw, Receipt } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { MonthNavigation } from '@/components/MonthNavigation';
 import { TotalHeroCard } from '@/components/dashboard/TotalHeroCard';
@@ -8,32 +11,24 @@ import { BudgetCategoryCard } from '@/components/dashboard/BudgetCategoryCard';
 import { BudgetStatusStrip } from '@/components/dashboard/BudgetStatusStrip';
 import { BudgetHistoryChart } from '@/components/dashboard/BudgetHistoryChart';
 import { SpendingVelocityCard } from '@/components/dashboard/SpendingVelocityCard';
-import { TopMerchantsCard } from '@/components/dashboard/TopMerchantsCard';
 import { NonBudgetedHeroCard } from '@/components/dashboard/NonBudgetedHeroCard';
 import { NonBudgetedCategoryCard } from '@/components/dashboard/NonBudgetedCategoryCard';
-import { CompactStatsBar } from '@/components/dashboard/CompactStatsBar';
-import { AllCategoriesSpending } from '@/components/dashboard/AllCategoriesSpending';
-import { InsightsCard } from '@/components/dashboard/InsightsCard';
 import { AddBudgetCard } from '@/components/dashboard/AddBudgetCard';
 import { AddCategoryCard } from '@/components/dashboard/AddCategoryCard';
 
-import { MonthlyTrendChart } from '@/components/dashboard/MonthlyTrendChart';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { TransactionList } from '@/components/transactions/TransactionList';
 import {
   SubscriptionsHeroCard,
   SubscriptionGrid,
   UpcomingRenewals,
 } from '@/components/subscriptions';
-import { AnalyticsPanel } from '@/components/AnalyticsPanel';
 import { CSVUploadModal } from '@/components/modals/CSVUploadModal';
 import { CategoryDetailModal } from '@/components/modals/CategoryDetailModal';
 import { SubscriptionDetailModal } from '@/components/modals/SubscriptionDetailModal';
-import { SettingsModal } from '@/components/modals/SettingsModal';
 import { PDFExport } from '@/components/PDFExport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { parseCSV } from '@/lib/csv-parser';
-import { loadTransactions, saveTransactions, clearTransactions } from '@/lib/storage';
+import { loadTransactions, saveTransactions } from '@/lib/storage';
 import { downloadJSON, downloadCSV } from '@/lib/export';
 import { useSettings } from '@/hooks/useSettings';
 import { useCategories } from '@/hooks/useCategories';
@@ -41,15 +36,24 @@ import { useSubscriptions } from '@/hooks/useSubscriptions';
 import { useInsights } from '@/hooks/useInsights';
 import { useOverallAnalytics } from '@/hooks/useOverallAnalytics';
 
+// Lazy load components below the fold for better initial page load performance
+const CompactStatsBar = lazy(() => import('@/components/dashboard/CompactStatsBar').then(m => ({ default: m.CompactStatsBar })))
+const InsightsCard = lazy(() => import('@/components/dashboard/InsightsCard').then(m => ({ default: m.InsightsCard })))
+const AllCategoriesSpending = lazy(() => import('@/components/dashboard/AllCategoriesSpending').then(m => ({ default: m.AllCategoriesSpending })))
+const TopMerchantsCard = lazy(() => import('@/components/dashboard/TopMerchantsCard').then(m => ({ default: m.TopMerchantsCard })))
+const MonthlyTrendChart = lazy(() => import('@/components/dashboard/MonthlyTrendChart').then(m => ({ default: m.MonthlyTrendChart })))
+const TransactionList = lazy(() => import('@/components/transactions/TransactionList').then(m => ({ default: m.TransactionList })))
+const AnalyticsPanel = lazy(() => import('@/components/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
+
 import type { Transaction, Category } from '@/types';
 import type { Subscription } from '@/types/subscription';
+import type { UserSettings } from '@/types/settings';
 
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [pdfExportRef, setPdfExportRef] = useState<HTMLDivElement | null>(null);
@@ -81,7 +85,7 @@ function App() {
       try {
         // Try loading from localStorage first
         const stored = loadTransactions();
-        if (stored && stored.length > 0) {
+        if (stored) {
           setTransactions(stored);
           setLoading(false);
           return;
@@ -101,12 +105,31 @@ function App() {
     loadData();
   }, []);
 
-  // Save transactions to localStorage whenever they change
+  // Save transactions to localStorage whenever they change (but not during initial load)
   useEffect(() => {
-    if (transactions.length > 0) {
-      saveTransactions(transactions);
+    // Skip auto-save during initial load to prevent overwriting stored data
+    if (loading) {
+      return;
     }
-  }, [transactions]);
+
+    try {
+      saveTransactions(transactions);
+    } catch (error) {
+      // Handle QuotaExceededError - show user-facing alert
+      if (error instanceof Error && error.message.includes('localStorage quota exceeded')) {
+        alert(
+          '⚠️ Storage Limit Reached!\n\n' +
+          error.message + '\n\n' +
+          'Your changes could not be saved. Please:\n' +
+          '1. Export your data (Settings → Export)\n' +
+          '2. Remove receipt attachments from old transactions\n' +
+          '3. Or delete transactions you no longer need'
+        );
+      } else {
+        console.error('Failed to save transactions:', error);
+      }
+    }
+  }, [transactions, loading]);
 
   const handleCSVUpload = (newTransactions: Transaction[]) => {
     setTransactions(newTransactions);
@@ -131,6 +154,14 @@ function App() {
     }
   }, [transactions, settingsHook]);
 
+  const handleAddTransaction = useCallback((transaction: Transaction) => {
+    setTransactions((prev) => {
+      // Add the new transaction and sort by date (newest first)
+      const updated = [...prev, transaction];
+      return updated.sort((a, b) => b.date.getTime() - a.date.getTime());
+    });
+  }, []);
+
   const handleExportPDF = () => {
     if (pdfExportRef) {
       // Trigger PDF export - the PDFExport component will handle it
@@ -148,9 +179,17 @@ function App() {
   }, [transactions]);
 
   const handleClearTransactions = useCallback(() => {
-    clearTransactions();
     setTransactions([]);
   }, []);
+
+  const handleImportData = useCallback((importedTransactions: Transaction[], importedSettings: UserSettings) => {
+    // Update transactions
+    setTransactions(importedTransactions);
+    saveTransactions(importedTransactions);
+
+    // Update settings
+    settingsHook.updateSettings(importedSettings);
+  }, [settingsHook]);
 
   // Filter transactions for selected month
   const monthTransactions = useMemo(() => {
@@ -175,6 +214,7 @@ function App() {
     );
   }, [categoryList, settingsHook.settings.budgets]);
 
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -190,7 +230,7 @@ function App() {
         setUploadModalOpen(true);
       } else if (isMeta && e.key === ',') {
         e.preventDefault();
-        setSettingsModalOpen(true);
+        window.location.href = '/settings';
       } else if (e.key === 'ArrowLeft' && !isMeta) {
         e.preventDefault();
         setSelectedMonth((prev) => {
@@ -205,335 +245,382 @@ function App() {
           newDate.setMonth(newDate.getMonth() + 1);
           return newDate;
         });
+      } else if (e.key === '1' && !isMeta) {
+        e.preventDefault();
+        setActiveTab('dashboard');
+      } else if (e.key === '2' && !isMeta) {
+        e.preventDefault();
+        setActiveTab('budget');
+      } else if (e.key === '3' && !isMeta) {
+        e.preventDefault();
+        setActiveTab('subscriptions');
+      } else if (e.key === '4' && !isMeta) {
+        e.preventDefault();
+        setActiveTab('transactions');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [setActiveTab]);
 
   if (loading) {
     return (
-      <ThemeProvider defaultTheme="light">
-        <div className="min-h-screen bg-background">
-          <Header
-            onUploadClick={() => {}}
-            onExportPDF={() => {}}
-            onExportJSON={() => {}}
-            onExportCSV={() => {}}
-            onSettingsClick={() => {}}
-          />
-          <main className="mx-auto w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
-            <DashboardSkeleton />
-          </main>
-        </div>
-      </ThemeProvider>
+      <div className="min-h-screen bg-background">
+        <Header
+          onUploadClick={() => {}}
+          onExportPDF={() => {}}
+          onExportJSON={() => {}}
+          onExportCSV={() => {}}
+        />
+        <main className="mx-auto w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
+          <DashboardSkeleton />
+        </main>
+      </div>
     );
   }
 
   return (
-    <ThemeProvider defaultTheme="dark">
-      <div className="min-h-screen bg-background">
-        {/* Skip link for keyboard accessibility */}
-        <a
-          href="#main-content"
-          className="skip-link"
-        >
-          Skip to main content
-        </a>
-        <Header
-          onUploadClick={() => setUploadModalOpen(true)}
-          onExportPDF={handleExportPDF}
-          onExportJSON={handleExportJSON}
-          onExportCSV={handleExportCSV}
-          onSettingsClick={() => setSettingsModalOpen(true)}
-          onAnalyticsClick={() => setAnalyticsPanelOpen(true)}
-        />
-        <main id="main-content" className="mx-auto w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-            {/* Navigation row: Month selector + Tabs */}
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-              <MonthNavigation
-                selectedMonth={selectedMonth}
-                onMonthChange={setSelectedMonth}
-              />
-              <TabsList>
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="budget">Budget</TabsTrigger>
-                <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-                <TabsTrigger value="transactions">Transactions</TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Dashboard Tab - Total spending at a glance */}
-            <TabsContent value="dashboard" className="space-y-8" ref={setPdfExportRef}>
-              {/* Total Hero Card - Shows all spending with budgeted vs non-budgeted split */}
-              <TotalHeroCard
-                transactions={transactions}
-                month={selectedMonth}
-                budgetedCategories={budgetedCategories}
-                nonBudgetedCategories={nonBudgetedCategories}
-                settings={settingsHook.settings}
-                onUploadClick={() => setUploadModalOpen(true)}
-                onNavigateToBudget={() => setActiveTab('budget')}
-              />
-
-              {/* Section separator */}
-              <div className="border-t border-border/50" />
-
-              {/* Compact Stats Bar */}
-              <CompactStatsBar
-                transactions={monthTransactions}
-                allTransactions={transactions}
-                month={selectedMonth}
-                settings={settingsHook.settings}
-              />
-
-              {/* Section separator */}
-              <div className="border-t border-border/50" />
-
-              {/* Smart Insights */}
-              <InsightsCard
-                insights={insights}
-                categories={categories}
-                transactions={monthTransactions}
-                month={selectedMonth}
-                settings={settingsHook.settings}
-              />
-
-              {/* Section separator */}
-              <div className="border-t border-border/50" />
-
-              {/* Two column: All Categories + Top Merchants */}
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 items-stretch">
-                <AllCategoriesSpending
-                  transactions={monthTransactions}
-                  categories={categoryList}
-                  onCategoryClick={setSelectedCategory}
-                />
-                <TopMerchantsCard
-                  transactions={transactions}
-                  month={selectedMonth}
-                  limit={5}
-                />
-              </div>
-
-              {/* Section separator */}
-              <div className="border-t border-border/50" />
-
-              {/* Monthly Trend Chart */}
-              <MonthlyTrendChart
-                transactions={transactions}
-                categories={categories}
-                categoryList={categoryList}
-                currentMonth={selectedMonth}
-                settings={settingsHook.settings}
-              />
-
-              {/* PDF Export - hidden but available for export */}
-              <div className="hidden">
-                <PDFExport />
-              </div>
-            </TabsContent>
-
-            {/* Budget Tab - Budgeted + collapsible non-budgeted categories */}
-            <TabsContent value="budget" className="space-y-8">
-              {/* Budget Status Strip - Persistent indicator */}
-              <BudgetStatusStrip
-                transactions={transactions}
-                month={selectedMonth}
-                settings={settingsHook.settings}
-                onNavigateToBudget={() => {}}
-              />
-
-              {/* Budget Hero - Budget status and projections */}
-              <BudgetHeroCard
-                transactions={transactions}
-                month={selectedMonth}
-                settings={settingsHook.settings}
-              />
-
-              {/* Budget Insights - Historical trend and spending velocity */}
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-                <BudgetHistoryChart
-                  transactions={transactions}
-                  settings={settingsHook.settings}
-                  months={6}
-                />
-                <SpendingVelocityCard
-                  transactions={transactions}
-                  month={selectedMonth}
-                  settings={settingsHook.settings}
-                />
-              </div>
-
-              {/* Budgeted Categories */}
-              <div className="space-y-4">
-                <div className="pb-3 border-b">
-                  <h2 className="text-lg font-semibold">Budgeted Categories</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Track spending against your monthly budget limits
-                  </p>
-                </div>
-                <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
-                  {budgetedCategories.map((category, index) => (
-                    <div
-                      key={category.id}
-                      className="animate-card-enter"
-                      style={{ animationDelay: `${index * 40}ms` }}
-                    >
-                      <BudgetCategoryCard
-                        category={category}
-                        transactions={transactions}
-                        month={selectedMonth}
-                        budget={settingsHook.settings.budgets[category.id]?.amount || 0}
-                        onClick={() => setSelectedCategory(category)}
-                      />
-                    </div>
-                  ))}
-                  <AddBudgetCard />
-                </div>
-              </div>
-
-              {/* Collapsible Non-Budgeted Section */}
-              {nonBudgetedCategories.length > 0 && (
-                <div className="space-y-4 pt-4 border-t border-border">
-                  <button
-                    onClick={() => setShowNonBudgeted(!showNonBudgeted)}
-                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <svg
-                      className={`h-4 w-4 transition-transform ${showNonBudgeted ? 'rotate-90' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    Non-Budgeted Categories ({nonBudgetedCategories.length})
-                  </button>
-
-                  {showNonBudgeted && (
-                    <div className="space-y-4 animate-fade-in">
-                      <NonBudgetedHeroCard
-                        transactions={transactions}
-                        month={selectedMonth}
-                        nonBudgetedCategories={nonBudgetedCategories}
-                      />
-                      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                        {nonBudgetedCategories.map((category, index) => (
-                          <div
-                            key={category.id}
-                            className="animate-card-enter"
-                            style={{ animationDelay: `${index * 25}ms` }}
-                          >
-                            <NonBudgetedCategoryCard
-                              category={category}
-                              transactions={transactions}
-                              month={selectedMonth}
-                              onClick={() => setSelectedCategory(category)}
-                            />
-                          </div>
-                        ))}
-                        <AddCategoryCard />
+    <Routes>
+                    <Route path="/settings" element={
+                      <div className="min-h-screen bg-background">
+                        <Header
+                          onUploadClick={() => setUploadModalOpen(true)}
+                          onExportPDF={handleExportPDF}
+                          onExportJSON={handleExportJSON}
+                          onExportCSV={handleExportCSV}
+                          onAnalyticsClick={() => setAnalyticsPanelOpen(true)}
+                        />
+                        <main className="mx-auto w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
+                          <SettingsPage
+                            settingsHook={settingsHook}
+                            transactionCount={transactions.length}
+                            onClearTransactions={handleClearTransactions}
+                            onAddTransaction={handleAddTransaction}
+                            transactions={transactions}
+                            onUpdateTransaction={handleUpdateTransaction}
+                            onImportData={handleImportData}
+                          />
+                        </main>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </TabsContent>
+                    } />
+                    <Route path="/*" element={
+                      <div className="min-h-screen bg-background">
+                        {/* Skip link for keyboard accessibility */}
+                        <a
+                          href="#main-content"
+                          className="skip-link"
+                        >
+                          Skip to main content
+                        </a>
+                        <Header
+                          onUploadClick={() => setUploadModalOpen(true)}
+                          onExportPDF={handleExportPDF}
+                          onExportJSON={handleExportJSON}
+                          onExportCSV={handleExportCSV}
+                          onAnalyticsClick={() => setAnalyticsPanelOpen(true)}
+                        />
+                        <main id="main-content" className="mx-auto w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6">
+                          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+                            {/* Navigation row: Month selector + Tabs */}
+                            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                              <MonthNavigation
+                                selectedMonth={selectedMonth}
+                                onMonthChange={setSelectedMonth}
+                              />
+                              <TabsList>
+                                <TabsTrigger value="dashboard">
+                                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                                  Dashboard
+                                </TabsTrigger>
+                                <TabsTrigger value="budget">
+                                  <Wallet className="h-4 w-4 mr-2" />
+                                  Budget
+                                </TabsTrigger>
+                                <TabsTrigger value="subscriptions">
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Subscriptions
+                                </TabsTrigger>
+                                <TabsTrigger value="transactions">
+                                  <Receipt className="h-4 w-4 mr-2" />
+                                  Transactions
+                                </TabsTrigger>
+                              </TabsList>
+                            </div>
+      
+                            {/* Dashboard Tab - Total spending at a glance */}
+                            <TabsContent value="dashboard" ref={setPdfExportRef}>
+                              <h2 className="sr-only">Dashboard Overview</h2>
+                              <div className="space-y-8">
+                                {/* Total spending overview */}
+                                <TotalHeroCard
+                                  transactions={transactions}
+                                  month={selectedMonth}
+                                  budgetedCategories={budgetedCategories}
+                                  nonBudgetedCategories={nonBudgetedCategories}
+                                  settings={settingsHook.settings}
+                                  onUploadClick={() => setUploadModalOpen(true)}
+                                  onNavigateToBudget={() => setActiveTab('budget')}
+                                />
 
-            {/* Subscriptions Tab - Recurring subscription management */}
-            <TabsContent value="subscriptions" className="space-y-8">
-              {/* Subscriptions Hero - Summary stats */}
-              <SubscriptionsHeroCard
-                totalMonthlySpend={subscriptionsHook.totalMonthlySpend}
-                annualProjection={subscriptionsHook.annualProjection}
-                activeCount={subscriptionsHook.activeCount}
-                upcomingRenewals={subscriptionsHook.upcomingRenewals}
-                onRefresh={subscriptionsHook.runDetection}
-                isDetecting={subscriptionsHook.isDetecting}
-              />
+                                {/* Budget Status Strip */}
+                                <BudgetStatusStrip
+                                  transactions={transactions}
+                                  month={selectedMonth}
+                                  settings={settingsHook.settings}
+                                  onNavigateToBudget={() => setActiveTab('budget')}
+                                />
 
-              {/* Two column layout: Grid + Upcoming */}
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
-                {/* Main subscription grid */}
-                <div className="lg:col-span-2">
-                  <SubscriptionGrid
-                    subscriptions={subscriptionsHook.subscriptions}
-                    onSubscriptionClick={setSelectedSubscription}
-                  />
-                </div>
+                                {/* Existing dashboard components */}
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  <CompactStatsBar
+                                    transactions={monthTransactions}
+                                    allTransactions={transactions}
+                                    month={selectedMonth}
+                                    settings={settingsHook.settings}
+                                  />
+                                </Suspense>
 
-                {/* Upcoming renewals sidebar - sticky on desktop */}
-                <div className="lg:sticky lg:top-20 lg:self-start">
-                  <UpcomingRenewals renewals={subscriptionsHook.upcomingRenewals} />
-                </div>
-              </div>
-            </TabsContent>
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  <InsightsCard
+                                    insights={insights}
+                                    categories={categories}
+                                    transactions={monthTransactions}
+                                    month={selectedMonth}
+                                    settings={settingsHook.settings}
+                                  />
+                                </Suspense>
 
-            {/* Transactions Tab - Detailed transaction list */}
-            <TabsContent value="transactions" className="space-y-8">
-              <TransactionList
-                transactions={monthTransactions}
-                selectedMonth={selectedMonth}
-                onDeleteTransaction={handleDeleteTransaction}
-                onUpdateTransaction={handleUpdateTransaction}
-                confirmDestructive={settingsHook.settings.preferences.confirmDestructiveActions}
-                categories={categories}
-              />
-            </TabsContent>
-          </Tabs>
-        </main>
+                                <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
+                                  <Suspense fallback={<div>Loading...</div>}>
+                                    <AllCategoriesSpending
+                                      transactions={monthTransactions}
+                                      categories={categoryList}
+                                      onCategoryClick={setSelectedCategory}
+                                    />
+                                  </Suspense>
+                                  <Suspense fallback={<div>Loading...</div>}>
+                                    <TopMerchantsCard
+                                      transactions={transactions}
+                                      month={selectedMonth}
+                                      limit={5}
+                                    />
+                                  </Suspense>
+                                </div>
 
-        {/* CSV Upload Modal */}
-        <CSVUploadModal
-          open={uploadModalOpen}
-          onOpenChange={setUploadModalOpen}
-          onUpload={handleCSVUpload}
-          existingTransactions={transactions}
-          defaultUploadMode={settingsHook.settings.preferences.defaultUploadMode}
-        />
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  <MonthlyTrendChart
+                                    transactions={transactions}
+                                    categories={categories}
+                                    categoryList={categoryList}
+                                    currentMonth={selectedMonth}
+                                    settings={settingsHook.settings}
+                                  />
+                                </Suspense>
+                              </div>
+                              {/* PDF Export - hidden but available for export */}
+                              <div className="hidden">
+                                <PDFExport />
+                              </div>
+                            </TabsContent>
+      
+                            {/* Budget Tab - Budgeted + collapsible non-budgeted categories */}
+                            <TabsContent value="budget" className="space-y-8">
+                              <h2 className="sr-only">Budget Management</h2>
+                              {/* Budget Status Strip - Persistent indicator */}
+                              <BudgetStatusStrip
+                                transactions={transactions}
+                                month={selectedMonth}
+                                settings={settingsHook.settings}
+                                onNavigateToBudget={() => {}}
+                              />
+      
+                              {/* Budget Hero - Budget status and projections */}
+                              <BudgetHeroCard
+                                transactions={transactions}
+                                month={selectedMonth}
+                                settings={settingsHook.settings}
+                              />
 
-        {/* Category Detail Modal */}
-        <CategoryDetailModal
-          category={selectedCategory}
-          transactions={monthTransactions}
-          onClose={() => setSelectedCategory(null)}
-          budget={selectedCategory ? settingsHook.settings.budgets[selectedCategory.id] : undefined}
-        />
+                              {/* Budget Insights - Historical trend and spending velocity */}
+                              <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
+                                <BudgetHistoryChart
+                                  transactions={transactions}
+                                  settings={settingsHook.settings}
+                                  months={6}
+                                />
+                                <SpendingVelocityCard
+                                  transactions={transactions}
+                                  month={selectedMonth}
+                                  settings={settingsHook.settings}
+                                />
+                              </div>
 
-        {/* Settings Modal */}
-        <SettingsModal
-          open={settingsModalOpen}
-          onOpenChange={setSettingsModalOpen}
-          settingsHook={settingsHook}
-          transactionCount={transactions.length}
-          onClearTransactions={handleClearTransactions}
-        />
+                              {/* Budgeted Categories */}
+                              <div className="space-y-4">
+                                <div className="pb-3 border-b">
+                                  <h3 className="text-lg font-semibold">Budgeted Categories</h3>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Track spending against your monthly budget limits
+                                  </p>
+                                </div>
+                                <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
+                                  {budgetedCategories.map((category, index) => (
+                                    <div
+                                      key={category.id}
+                                      className="animate-card-enter"
+                                      style={{ animationDelay: `${index * 40}ms` }}
+                                    >
+                                      <BudgetCategoryCard
+                                        category={category}
+                                        transactions={transactions}
+                                        month={selectedMonth}
+                                        budget={settingsHook.settings.budgets[category.id]?.amount || 0}
+                                        onClick={() => setSelectedCategory(category)}
+                                      />
+                                    </div>
+                                  ))}
+                                  <AddBudgetCard />
+                                </div>
+                              </div>
+      
+                              {/* Collapsible Non-Budgeted Section */}
+                              {nonBudgetedCategories.length > 0 && (
+                                <div className="space-y-4 pt-4 border-t border-border">
+                                  <button
+                                    onClick={() => setShowNonBudgeted(!showNonBudgeted)}
+                                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                  >
+                                    <svg
+                                      className={`h-4 w-4 transition-transform ${showNonBudgeted ? 'rotate-90' : ''}`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                    Non-Budgeted Categories ({nonBudgetedCategories.length})
+                                  </button>
+      
+                                  {showNonBudgeted && (
+                                    <div className="space-y-4 animate-fade-in">
+                                      <NonBudgetedHeroCard
+                                        transactions={transactions}
+                                        month={selectedMonth}
+                                        nonBudgetedCategories={nonBudgetedCategories}
+                                      />
+                                      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                                        {nonBudgetedCategories.map((category, index) => (
+                                          <div
+                                            key={category.id}
+                                            className="animate-card-enter"
+                                            style={{ animationDelay: `${index * 25}ms` }}
+                                          >
+                                            <NonBudgetedCategoryCard
+                                              category={category}
+                                              transactions={transactions}
+                                              month={selectedMonth}
+                                              onClick={() => setSelectedCategory(category)}
+                                            />
+                                          </div>
+                                        ))}
+                                        <AddCategoryCard />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </TabsContent>
 
-        {/* Subscription Detail Modal */}
-        <SubscriptionDetailModal
-          subscription={selectedSubscription}
-          transactions={transactions}
-          categories={categories}
-          onClose={() => setSelectedSubscription(null)}
-          onUpdate={subscriptionsHook.updateSubscription}
-          onCancel={subscriptionsHook.cancelSubscription}
-          onRemove={subscriptionsHook.removeSubscription}
-        />
+                            {/* Subscriptions Tab - Recurring subscription management */}
+                            <TabsContent value="subscriptions" className="space-y-8">
+                              <h2 className="sr-only">Subscriptions</h2>
+                              {/* Subscriptions Hero - Summary stats */}
+                              <SubscriptionsHeroCard
+                                totalMonthlySpend={subscriptionsHook.totalMonthlySpend}
+                                annualProjection={subscriptionsHook.annualProjection}
+                                activeCount={subscriptionsHook.activeCount}
+                                upcomingRenewals={subscriptionsHook.upcomingRenewals}
+                                onRefresh={subscriptionsHook.runDetection}
+                                isDetecting={subscriptionsHook.isDetecting}
+                              />
+      
+                              {/* Two column layout: Grid + Upcoming */}
+                              <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-3">
+                                {/* Main subscription grid */}
+                                <div className="lg:col-span-2">
+                                  <SubscriptionGrid
+                                    subscriptions={subscriptionsHook.subscriptions}
+                                    onSubscriptionClick={setSelectedSubscription}
+                                  />
+                                </div>
+      
+                                {/* Upcoming renewals sidebar - sticky on desktop */}
+                                <div className="lg:sticky lg:top-20 lg:self-start">
+                                  <UpcomingRenewals renewals={subscriptionsHook.upcomingRenewals} />
+                                </div>
+                              </div>
+                            </TabsContent>
+      
+                            {/* Transactions Tab - Detailed transaction list - Lazy loaded */}
+                            <TabsContent value="transactions" className="space-y-8">
+                              <h2 className="sr-only">Transactions</h2>
+                              <Suspense fallback={<div>Loading...</div>}>
+                                <TransactionList
+                                  transactions={monthTransactions}
+                                  selectedMonth={selectedMonth}
+                                  onDeleteTransaction={handleDeleteTransaction}
+                                  onUpdateTransaction={handleUpdateTransaction}
+                                  confirmDestructive={settingsHook.settings.preferences.confirmDestructiveActions}
+                                  categories={categories}
+                                />
+                              </Suspense>
+                            </TabsContent>
+                          </Tabs>
+                        </main>
+      
+                        {/* CSV Upload Modal */}
+                        <CSVUploadModal
+                          open={uploadModalOpen}
+                          onOpenChange={setUploadModalOpen}
+                          onUpload={handleCSVUpload}
+                          existingTransactions={transactions}
+                          defaultUploadMode={settingsHook.settings.preferences.defaultUploadMode}
+                        />
+      
+                        {/* Category Detail Modal */}
+                        <CategoryDetailModal
+                          category={selectedCategory}
+                          transactions={monthTransactions}
+                          onClose={() => setSelectedCategory(null)}
+                          budget={selectedCategory ? settingsHook.settings.budgets[selectedCategory.id] : undefined}
+                        />
 
-        {/* Analytics Panel */}
-        <AnalyticsPanel
-          isOpen={analyticsPanelOpen}
-          onClose={() => setAnalyticsPanelOpen(false)}
-          transactions={transactions}
-          categories={categories}
-          categoryList={categoryList}
-          analytics={overallAnalytics}
-        />
-      </div>
-    </ThemeProvider>
+                        {/* Subscription Detail Modal */}
+                        <SubscriptionDetailModal
+                          subscription={selectedSubscription}
+                          transactions={transactions}
+                          categories={categories}
+                          onClose={() => setSelectedSubscription(null)}
+                          onUpdate={subscriptionsHook.updateSubscription}
+                          onCancel={subscriptionsHook.cancelSubscription}
+                          onRemove={subscriptionsHook.removeSubscription}
+                        />
+
+                        {/* Analytics Panel - Lazy loaded */}
+                        <Suspense fallback={null}>
+                          <AnalyticsPanel
+                            isOpen={analyticsPanelOpen}
+                            onClose={() => setAnalyticsPanelOpen(false)}
+                            transactions={transactions}
+                            categories={categories}
+                            categoryList={categoryList}
+                            analytics={overallAnalytics}
+                          />
+                        </Suspense>
+                      </div>
+                    } />
+    </Routes>
   );
 }
 
